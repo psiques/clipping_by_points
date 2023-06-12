@@ -19,9 +19,6 @@ cam_pontos = cam_pontos.replace("\\", "/")
 # Carregando o shapefile de pontos
 pontos = gpd.read_file(cam_pontos)
 
-# Projetando os dados no sistema de coordenadas UTM (zona 23S)
-pontos = pontos.to_crs('EPSG:32723')
-
 # Criando todas as linhas entre os pontos
 segmentos_linha = []
 for i in range(len(pontos)-1):
@@ -60,13 +57,17 @@ shapefile_recortado = recortar_shapefile(area_dissolvida_gdf.geometry[0], shapef
 # Salvando os shapefiles de saída
 caminho_saida = input("Digite o diretório de saída: ")
 
-# Salvando a trilha (segmentos de linha)
-trilha_saida = caminho_saida + "/trilha_" + cam_pontos.split("/")[-1]
-salvar_shapefile(linhas, trilha_saida)
+# Perguntar ao usuário se deseja salvar a trilha
+salvar_trilha = input("Deseja salvar a trilha? (S/N): ")
+if salvar_trilha.upper() == "S":
+    trilha_saida = caminho_saida + "/trilha_" + cam_pontos.split("/")[-1]
+    salvar_shapefile(linhas, trilha_saida)
 
-# Salvando o buffer
-buffer_saida = caminho_saida + "/buffer_" + str(buffer_size) + "m"
-salvar_shapefile(area_dissolvida_gdf, buffer_saida)
+# Perguntar ao usuário se deseja salvar o buffer
+salvar_buffer = input("Deseja salvar o buffer? (S/N): ")
+if salvar_buffer.upper() == "S":
+    buffer_saida = caminho_saida + "/buffer_" + str(buffer_size) + "m"
+    salvar_shapefile(area_dissolvida_gdf, buffer_saida)
 
 # Salvando o shapefile recortado
 recorte_saida = caminho_saida + "/recorte_" + caminho_shapefile.split("/")[-1]
