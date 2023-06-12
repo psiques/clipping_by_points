@@ -19,13 +19,26 @@ cam_pontos = cam_pontos.replace("\\", "/")
 # Carregando o shapefile de pontos
 pontos = gpd.read_file(cam_pontos)
 
-# Criando todas as linhas entre os pontos
+# Calculando a média da distância entre os pontos
+distancias = []
+for i in range(len(pontos)-1):
+    ponto_atual = pontos.iloc[i]
+    proximo_ponto = pontos.iloc[i+1]
+    distancia = ponto_atual.geometry.distance(proximo_ponto.geometry)
+    distancias.append(distancia)
+
+media_distancia = sum(distancias) / len(distancias)
+limite_distancia = 3 * media_distancia
+
+# Removendo os segmentos de linha que ultrapassem o limite de distância
 segmentos_linha = []
 for i in range(len(pontos)-1):
     ponto_atual = pontos.iloc[i]
     proximo_ponto = pontos.iloc[i+1]
-    segmento_linha = LineString([ponto_atual.geometry, proximo_ponto.geometry])
-    segmentos_linha.append(segmento_linha)
+    distancia = ponto_atual.geometry.distance(proximo_ponto.geometry)
+    if distancia <= limite_distancia:
+        segmento_linha = LineString([ponto_atual.geometry, proximo_ponto.geometry])
+        segmentos_linha.append(segmento_linha)
 
 # Criando um GeoDataFrame com os segmentos de linha
 linhas = gpd.GeoDataFrame(geometry=segmentos_linha, crs='EPSG:32723')
