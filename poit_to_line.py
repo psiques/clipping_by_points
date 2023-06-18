@@ -3,7 +3,7 @@ from shapely.geometry import LineString
 
 # Função para recortar o shapefile de entrada pelo buffer
 def recortar_shapefile(buffer, shapefile):
-    recorte = gpd.clip(shapefile, buffer)
+    recorte = shapefile.geometry.clip(buffer)
     return recorte
 
 # Função para salvar o GeoDataFrame como shapefile
@@ -19,8 +19,11 @@ cam_pontos = cam_pontos.replace("\\", "/")
 # Carregando o shapefile de pontos
 pontos = gpd.read_file(cam_pontos)
 
-# Projetando os dados no sistema de coordenadas UTM (zona 23S)
-pontos = pontos.to_crs('EPSG:32723')
+# Projetando os dados para um sistema de coordenadas planas
+pontos = pontos.to_crs('EPSG:31983')
+
+# Obtendo o CRS do shapefile de pontos
+crs_pontos = pontos.crs
 
 # Criando todas as linhas entre os pontos
 segmentos_linha = []
@@ -37,7 +40,7 @@ distancia_media = sum(segmento.length for segmento in segmentos_linha) / len(seg
 segmentos_filtrados = [segmento for segmento in segmentos_linha if segmento.length <= 3 * distancia_media]
 
 # Criando um novo GeoDataFrame com os segmentos de linha filtrados
-multilinhas = gpd.GeoDataFrame(geometry=segmentos_filtrados, crs='EPSG:32723')
+multilinhas = gpd.GeoDataFrame(geometry=segmentos_filtrados, crs=crs_pontos)
 
 # Solicitando a metragem do buffer em metros
 buffer_size = float(input("Digite a metragem do buffer em metros: "))
@@ -49,7 +52,7 @@ areas_buffer = multilinhas.buffer(buffer_size)
 area_dissolvida = areas_buffer.unary_union
 
 # Criando um GeoDataFrame com a área dissolvida
-area_dissolvida_gdf = gpd.GeoDataFrame(geometry=[area_dissolvida], crs='EPSG:32723')
+area_dissolvida_gdf = gpd.GeoDataFrame(geometry=[area_dissolvida], crs=crs_pontos)
 
 # Caminho para o shapefile de entrada para recortar
 caminho_shapefile = input("Insira o caminho para o shapefile a ser recortado: ")
@@ -59,6 +62,15 @@ caminho_shapefile = caminho_shapefile.replace("\\", "/")
 
 # Carregando o shapefile a ser recortado
 shapefile_recortar = gpd.read_file(caminho_shapefile)
+
+# Obtendo o CRS do shapefile a ser recortado
+crs_shapefile = shapefile_recortar.crs
+
+# Projetando o shapefile a ser recortado para um sistema de coordenadas planas
+shapefile_recortar = shapefile_recortar.to_crs('EPSG:31983')
+
+# Atribuindo o CRS ao polígono da área dissolvida
+area_dissolvida_gdf = area_dissolvida_gdf.set_crs(crs_shapefile)
 
 # Recortando o shapefile pelo buffer
 shapefile_recortado = recortar_shapefile(area_dissolvida_gdf.geometry[0], shapefile_recortar)
