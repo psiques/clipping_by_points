@@ -48,48 +48,27 @@ buffer_size = float(input("Digite a metragem do buffer em metros: "))
 # Criando o buffer ao redor das linhas
 areas_buffer = multilinhas.buffer(buffer_size)
 
-# Dissolvendo as áreas
-area_dissolvida = areas_buffer.unary_union
-
-# Criando um GeoDataFrame com a área dissolvida
-area_dissolvida_gdf = gpd.GeoDataFrame(geometry=[area_dissolvida], crs=crs_pontos)
-
-# Caminho para o shapefile de entrada para recortar
-caminho_shapefile = input("Insira o caminho para o shapefile a ser recortado: ")
-
-# Substituindo as barras invertidas por barras normais
-caminho_shapefile = caminho_shapefile.replace("\\", "/")
-
 # Carregando o shapefile a ser recortado
+caminho_shapefile = input("Insira o caminho para o shapefile a ser recortado: ")
+caminho_shapefile = caminho_shapefile.replace("\\", "/")
 shapefile_recortar = gpd.read_file(caminho_shapefile)
 
 # Obtendo o CRS do shapefile a ser recortado
 crs_shapefile = shapefile_recortar.crs
 
-# Projetando o shapefile a ser recortado para um sistema de coordenadas planas
-shapefile_recortar = shapefile_recortar.to_crs('EPSG:31983')
+# Transformando o CRS do buffer
+areas_buffer = areas_buffer.to_crs(crs_shapefile)
 
-# Atribuindo o CRS ao polígono da área dissolvida
-area_dissolvida_gdf = area_dissolvida_gdf.set_crs(crs_shapefile)
+# Dissolvendo as áreas
+area_dissolvida = areas_buffer.unary_union
+
+# Criando um GeoDataFrame com a área dissolvida
+area_dissolvida_gdf = gpd.GeoDataFrame(geometry=[area_dissolvida], crs=crs_shapefile)
 
 # Recortando o shapefile pelo buffer
 shapefile_recortado = recortar_shapefile(area_dissolvida_gdf.geometry[0], shapefile_recortar)
 
 # Salvando os shapefiles de saída
-caminho_saida = input("Digite o diretório de saída: ")
-
-# Perguntar ao usuário se deseja salvar a trilha
-salvar_trilha = input("Deseja salvar a trilha? (S/N): ")
-if salvar_trilha.upper() == "S":
-    trilha_saida = caminho_saida + "/trilha_" + cam_pontos.split("/")[-1]
-    salvar_shapefile(multilinhas, trilha_saida)
-
-# Perguntar ao usuário se deseja salvar o buffer
-salvar_buffer = input("Deseja salvar o buffer? (S/N): ")
-if salvar_buffer.upper() == "S":
-    buffer_saida = caminho_saida + "/buffer_" + str(buffer_size) + "m"
-    salvar_shapefile(area_dissolvida_gdf, buffer_saida)
-
-# Salvando o shapefile recortado
-recorte_saida = caminho_saida + "/recorte_" + caminho_shapefile.split("/")[-1]
-salvar_shapefile(shapefile_recortado, recorte_saida)
+caminho_saida = input("Digite o caminho para salvar o shapefile recortado: ")
+caminho_saida = caminho_saida.replace("\\", "/")
+salvar_shapefile(shapefile_recortado, caminho_saida)
